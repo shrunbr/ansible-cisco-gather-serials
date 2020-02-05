@@ -1,0 +1,39 @@
+---
+- name: Gather Serial Numbers
+  hosts: switches
+  gather_facts: no
+  connection: local
+  debugger: never
+
+  vars_prompt:
+  - name: "mgmt_username"
+    prompt: "Username"
+    private: no
+  - name: "mgmt_password"
+    prompt: "Password"
+
+  tasks:
+  
+  - name: define provider
+    set_fact:
+      provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ mgmt_username }}"
+          password: "{{ mgmt_password }}"
+
+  - name: show interfaces
+    ios_facts:
+      provider: "{{ provider }}"
+      gather_subset: hardware
+    register: device_hardware
+  
+  - name: show device hardware
+    debug:
+      msg: "{{ device_hardware.ansible_facts.ansible_net_stacked_serialnums }}"
+
+  - name: save output to file
+    blockinfile:
+      create: yes
+      dest: "/home/user/ansible/gather_serials/serial_numbers.txt"
+      marker: "# {mark} ANSIBLE MANAGED BLOCK {{ inventory_hostname }}"
+      block: "{{ device_hardware.ansible_facts.ansible_net_stacked_serialnums }}"
